@@ -13,8 +13,8 @@ namespace UnoServer.Controllers
     [ApiController]
     public class MatchController : ControllerBase
     {
-        private MatchesStorageService _matchesStorageService;
-        public MatchController(MatchesStorageService matchesStorageService)
+        private IMatchesStorageService _matchesStorageService;
+        public MatchController(UnoMatchesStorageService matchesStorageService)
         {
             _matchesStorageService = matchesStorageService ?? throw new ArgumentNullException(nameof(matchesStorageService));
         }

@@ -5,14 +5,23 @@ using System.Threading.Tasks;
 
 namespace UnoServer.Models
 {
-    public class Match
+    public class UnoMatch: IMatch
     {
         public Guid Id { get; set; }
         public List<Guid> Players { get; set; }
-
-        public Match()
+        public UnoMatch()
         {
             Players = new List<Guid>();
+        }
+
+        public Guid getId()
+        {
+            return Id;
+        }
+
+        public List<Guid> getPlayers()
+        {
+            return Players;
         }
     }
 }
