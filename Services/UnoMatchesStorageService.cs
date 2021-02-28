@@ -6,7 +6,7 @@ using UnoServer.Models;
 
 namespace UnoServer.Services
 {
-    public class UnoMatchesStorageService: IMatchesStorageService
+    public class UnoMatchesStorageService
     {
         private List<Guid> _matchQueue = new List<Guid>();
         private List<Guid> _matchedUsers = new List<Guid>();
@@ -26,8 +26,8 @@ namespace UnoServer.Services
         {
             if (_matchedUsers.Contains(user))
             {
-                UnoMatch existing = _matches.Find(x => x.getPlayers().Any(player => player.Equals(user)));
-                return existing?.getId();
+                UnoMatch existing = _matches.Find(x => x.Players.Any(player => player.Equals(user)));
+                return existing?.Id;
             }
 
             if (!_matchQueue.Contains(user) || _matchQueue.Count == 1)
@@ -42,19 +42,16 @@ namespace UnoServer.Services
             _matchedUsers.Add(user);
             _matchedUsers.Add(opponent);
 
-            UnoMatch match = new UnoMatch
-            {
-                Id = Guid.NewGuid(),
-                Players = new List<Guid>
-                {
-                    user,
-                    opponent
-                }
-            };
+            UnoMatch match = new UnoMatch(Guid.NewGuid(), new List<Guid> { user, opponent });
 
             _matches.Add(match);
 
             return match.Id;
+        }
+
+        public UnoMatch FindMatch(Guid matchId)
+        {
+            return _matches.Find(x => x.Id.Equals(matchId));
         }
     }
 }

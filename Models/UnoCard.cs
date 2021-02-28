@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace UnoServer.Models
 {
-    public class UnoCard: ICard
+    public class UnoCard
     {
         public UnoCardType Type { get; set; }
         public int NumberValue { get; set; }

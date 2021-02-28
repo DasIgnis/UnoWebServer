@@ -14,7 +14,7 @@ namespace UnoServer.Controllers
     [ApiController]
     public class GameController : ControllerBase
     {
-        private IMatchesStorageService _matchesStorageService;
+        private UnoMatchesStorageService _matchesStorageService;
         public GameController(UnoMatchesStorageService matchesStorageService)
         {
             _matchesStorageService = matchesStorageService;
@@ -22,9 +22,26 @@ namespace UnoServer.Controllers
 
         [HttpGet("board")]
         [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(BoardResponse))]
+        [ProducesResponseType((int)HttpStatusCode.NotFound)]
         public async Task<IActionResult> Board([FromQuery]BoardRequest request)
         {
-            return Ok();
+            UnoMatch match = _matchesStorageService.FindMatch(request.MatchId);
+            if (match == null)
+            {
+                return NotFound("Match not found");
+            }
+
+            BoardResponse response = new BoardResponse
+            {
+                MatchId = match.Id,
+                //TODO: check winning status
+                Status = GameStatus.InProcess,
+                MyMove = match.CurrentPlayer.Equals(request.Token),
+                Hand = match.GetHand(request.Token),
+                CurrentCard = match.GetCurrentCard()
+            };
+
+            return Ok(response);
         }
 
         [HttpPost("move")]
@@ -45,16 +62,24 @@ namespace UnoServer.Controllers
     {
         public Guid MatchId { get; set; }
         public GameStatus Status { get; set; }
-        public Guid CurrentPlayerId { get; set; }
+        public bool MyMove { get; set; }
         public List<UnoCard> Hand { get; set; }
         public UnoCard CurrentCard { get; set; }
+        public BoardResponse()
+        {
+            Hand = new List<UnoCard>();
+        }
     }
 
     public class MoveRequest
     {
         public Guid Token { get; set; }
         public Guid MatchId { get; set; }
-        public UnoCard Card { get; set; }
+        public List<UnoCard> Cards { get; set; }
+        public MoveRequest()
+        {
+            Cards = new List<UnoCard>();
+        }
     }
 
     public enum GameStatus

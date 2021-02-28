@@ -13,7 +13,7 @@ namespace UnoServer.Controllers
     [ApiController]
     public class MatchController : ControllerBase
     {
-        private IMatchesStorageService _matchesStorageService;
+        private UnoMatchesStorageService _matchesStorageService;
         public MatchController(UnoMatchesStorageService matchesStorageService)
         {
             _matchesStorageService = matchesStorageService ?? throw new ArgumentNullException(nameof(matchesStorageService));
@@ -47,12 +47,12 @@ namespace UnoServer.Controllers
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
         public async Task<IActionResult> StartMatch([FromBody]StartMatchRequest request)
         {
-            if (!_matchesStorageService.IsEnqued(request.Token))
+            var matchId = _matchesStorageService.TryStartMatch(request.Token);
+
+            if (!matchId.HasValue && !_matchesStorageService.IsEnqued(request.Token))
             {
                 return NotFound("User GUID not found");
             }
-
-            var matchId = _matchesStorageService.TryStartMatch(request.Token);
 
             StartMatchResponse response = new StartMatchResponse {
                 Status = StartMatchResponseStatus.Queued,
