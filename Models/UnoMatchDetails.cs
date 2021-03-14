@@ -9,6 +9,8 @@ namespace UnoServer.Models
     public class UnoMatchDetails
     {
         public List<Guid> Players { get; set; }
+        public List<string> PlayersNames { get; set; }
         public Guid Winner { get; set; }
+        public string WinnerName { get; set; }
     }
 }

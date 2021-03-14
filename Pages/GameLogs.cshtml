@@ -1,0 +1,21 @@
+﻿@page
+@model UnoServer.Pages.GameLogsModel
+@{
+}
+
+<div>
+    <h1>Game logs</h1>
+    @foreach (var match in Model.GetMatches())
+    {
+        <div style="display: grid; grid-template-columns: 2fr 1fr">
+            <div>
+                <b>Game between</b> @foreach (var name in match.PlayersNames) {
+                <span>@name </span>
+            }
+            </div>
+            <div>
+                <b>Winner:</b> @match.WinnerName
+            </div>
+        </div>
+    }
+</div>

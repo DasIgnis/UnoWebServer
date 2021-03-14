@@ -97,5 +97,18 @@ namespace UnoServer.Services
             });
 
         }
+
+        public List<UnoMatchDetails> GetPassedMatches()
+        {
+            return _passedMatches.Select(
+                match => new UnoMatchDetails
+                {
+                    Players = match.Players,
+                    PlayersNames = _users.Where(user => match.Players.Contains(user.Key)).Select(user => user.Value).ToList(),
+                    Winner = match.Winner,
+                    WinnerName = _users[match.Winner]
+                }
+                ).ToList();
+        }
     }
 }
