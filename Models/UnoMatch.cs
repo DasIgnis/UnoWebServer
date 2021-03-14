@@ -14,6 +14,7 @@ namespace UnoServer.Models
         public List<UnoCard> Discharge { get; set; }
         public Dictionary<Guid, List<UnoCard>> Hands { get; set; }
         public Guid CurrentPlayer { get; set; }
+        public UnoCardColor CurrentColor { get; set; }
 
         public UnoMatch()
         {
@@ -57,6 +58,105 @@ namespace UnoServer.Models
         public UnoCard GetCurrentCard()
         {
             return Discharge.Last();
+        }
+
+        public bool ValidateMove(List<UnoCard> cards)
+        {
+            //TODO: check if user hand has all cards in list
+            int currentValidatingCard = 0;
+            UnoCard lastCard = GetCurrentCard();
+            bool validationFlag = true;
+
+            do
+            {
+                UnoCard currentCard = cards[currentValidatingCard];
+                //TODO: validation
+                currentValidatingCard++;
+            } while (validationFlag && currentValidatingCard < cards.Count());
+
+            return validationFlag;
+        }
+
+        public MoveStatus Move(List<UnoCard> cards, UnoCardColor color)
+        {
+            if (cards.Count == 0)
+            {
+                bool hasMove = false;
+
+                foreach (var card in Hands[CurrentPlayer])
+                {
+                    hasMove = hasMove || ValidateMove(new List<UnoCard> { card });
+                }
+
+                if (hasMove)
+                {
+                    return MoveStatus.FAKE_EMPTY_MOVE;
+                } 
+                else
+                {
+                    TakeCard(CurrentPlayer);
+                    CurrentPlayer = NextPlayer();
+                    return MoveStatus.SUCCESS;
+                }
+            }
+
+            if (!ValidateMove(cards))
+            {
+                return MoveStatus.WRONG_MOVE;
+            }
+
+            cards.ForEach(card => Hands[CurrentPlayer].Remove(card));
+            if (Hands[CurrentPlayer].Count == 0)
+            {
+                return MoveStatus.ENDGAME;
+            }
+
+            cards.ForEach(card => Discharge.Add(card));
+
+            switch (GetCurrentCard().Type)
+            {
+                case UnoCardType.Numeric:
+                    CurrentPlayer = NextPlayer();
+                    break;
+                case UnoCardType.Reverse:
+                case UnoCardType.Skip:
+                    break;
+                case UnoCardType.TakeTwo:
+                    TakeCard(NextPlayer());
+                    TakeCard(NextPlayer());
+                    break;
+                case UnoCardType.TakeFourChooseColor:
+                    for (var i = 0; i < 4; i++)
+                    {
+                        TakeCard(NextPlayer());
+                    }
+                    CurrentColor = color;
+                    break;
+                case UnoCardType.ChooseColor:
+                    CurrentColor = color;
+                    CurrentPlayer = NextPlayer();
+                    break;
+            }
+
+            return MoveStatus.SUCCESS;
+        }
+
+        private Guid NextPlayer()
+        {
+            var index = Players.FindIndex(player => player == CurrentPlayer);
+            index = index == Players.Count - 1 ? 0 : index + 1;
+            return Players[index];
+        }
+
+        private void TakeCard(Guid user)
+        {
+            if (Deck.Count == 0)
+            {
+                Deck = Discharge.Shuffle().ToList();
+                Discharge.Clear();
+            }
+            Hands[user].Add(Deck.First());
+            Deck.RemoveAt(0);
         }
 
         private List<UnoCard> GenerateDeck()
@@ -126,5 +226,13 @@ namespace UnoServer.Models
 
             return result.Shuffle().ToList();
         }
+    }
+
+    public enum MoveStatus
+    {
+        SUCCESS,
+        WRONG_MOVE,
+        FAKE_EMPTY_MOVE,
+        ENDGAME
     }
 }

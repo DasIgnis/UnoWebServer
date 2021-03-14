@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using EnumsNET;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -48,6 +50,45 @@ namespace UnoServer.Controllers
         [ProducesResponseType((int)HttpStatusCode.OK)]
         public async Task<IActionResult> Move([FromBody]MoveRequest request)
         {
+            UnoMatch match = _matchesStorageService.FindMatch(request.MatchId);
+            if (match == null)
+            {
+                return BadRequest(new MoveErrorResponse 
+                { 
+                    ErrorCode = MoveErrorCode.MATCH_NOT_FOUND,
+                    Description = MoveErrorCode.MATCH_NOT_FOUND.AsString(EnumFormat.Description) 
+                });
+            }
+
+            if (match.CurrentPlayer != request.Token)
+            {
+                return BadRequest(new MoveErrorResponse
+                {
+                    ErrorCode = MoveErrorCode.NOT_YOUR_MOVE,
+                    Description = MoveErrorCode.NOT_YOUR_MOVE.AsString(EnumFormat.Description)
+                });
+            }
+
+            var responseStatus = match.Move(request.Cards, request.Color);
+            switch (responseStatus)
+            {
+                case MoveStatus.FAKE_EMPTY_MOVE:
+                    return BadRequest(new MoveErrorResponse
+                    {
+                        ErrorCode = MoveErrorCode.FAKE_EMPTY_MOVE,
+                        Description = MoveErrorCode.FAKE_EMPTY_MOVE.AsString(EnumFormat.Description)
+                    });
+                case MoveStatus.WRONG_MOVE:
+                    return BadRequest(new MoveErrorResponse
+                    {
+                        ErrorCode = MoveErrorCode.WRONG_MOVE,
+                        Description = MoveErrorCode.WRONG_MOVE.AsString(EnumFormat.Description)
+                    });
+                case MoveStatus.ENDGAME:
+                    _matchesStorageService.FinishMatch(match.Id);
+                    return Ok();
+            }
+
             return Ok();
         }
     }
@@ -89,5 +130,23 @@ namespace UnoServer.Controllers
         InProcess = 0,
         Win = 1,
         Lose
+    }
+
+    public class MoveErrorResponse
+    {
+        public MoveErrorCode ErrorCode { get; set; }
+        public string Description { get; set; }
+    }
+
+    public enum MoveErrorCode
+    {
+        [Description("Игра не найдена")]
+        MATCH_NOT_FOUND = 0,
+        [Description("Невалидный код")]
+        WRONG_MOVE = 1,
+        [Description("Не сделан ход, хотя есть возможность")]
+        FAKE_EMPTY_MOVE,
+        [Description("Ход другого пользователя")]
+        NOT_YOUR_MOVE
     }
 }
