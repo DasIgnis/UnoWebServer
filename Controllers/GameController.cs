@@ -65,6 +65,7 @@ namespace UnoServer.Controllers
         public bool MyMove { get; set; }
         public List<UnoCard> Hand { get; set; }
         public UnoCard CurrentCard { get; set; }
+        public UnoCardColor CurrentColor { get; set; }
         public BoardResponse()
         {
             Hand = new List<UnoCard>();
@@ -76,6 +77,7 @@ namespace UnoServer.Controllers
         public Guid Token { get; set; }
         public Guid MatchId { get; set; }
         public List<UnoCard> Cards { get; set; }
+        public UnoCardColor Color { get; set; }
         public MoveRequest()
         {
             Cards = new List<UnoCard>();

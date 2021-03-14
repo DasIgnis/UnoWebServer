@@ -23,13 +23,13 @@ namespace UnoServer.Controllers
         /// Get token for authentication
         /// </summary>
         /// <returns></returns>
-        [HttpGet("token")]
+        [HttpPost("token")]
         [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(MatchTokenResponse))]
-        public async Task<IActionResult> MatchToken()
+        public async Task<IActionResult> MatchToken([FromBody]MatchTokenRequest request)
         {
             Guid guid = Guid.NewGuid();
 
-            _matchesStorageService.Enqueue(guid);
+            _matchesStorageService.Enqueue(guid, request.Name);
 
             return Ok(new MatchTokenResponse
             {
@@ -47,7 +47,7 @@ namespace UnoServer.Controllers
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
         public async Task<IActionResult> StartMatch([FromBody]StartMatchRequest request)
         {
-            var matchId = _matchesStorageService.TryStartMatch(request.Token);
+            var matchId = _matchesStorageService.TryStartMatch(request.Token, request.Opponent);
 
             if (!matchId.HasValue && !_matchesStorageService.IsEnqued(request.Token))
             {
@@ -69,6 +69,11 @@ namespace UnoServer.Controllers
         }
     }
 
+    public class MatchTokenRequest
+    {
+        public string Name { get; set; }
+    }
+
     public class MatchTokenResponse
     {
         public Guid Token { get; set; }
@@ -77,6 +82,7 @@ namespace UnoServer.Controllers
     public class StartMatchRequest
     {
         public Guid Token { get; set; }
+        public Guid? Opponent { get; set; }
     }
 
     public class StartMatchResponse
