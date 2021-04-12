@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
+using UnoServer.Services;
 
 namespace UnoServer.Models
 {
@@ -31,23 +33,38 @@ namespace UnoServer.Models
                     && Type == other.Type;
             }
         }
+
+        public override string ToString()
+        {
+            return $"{Type.GetDescription()} {NumberValue} {Color.GetDescription()}";
+        }
     }
 
     public enum UnoCardType
     {
+        [Description("Number")]
         Numeric = 0,
+        [Description("Reverse")]
         Reverse = 1,
+        [Description("Skip move")]
         Skip,
+        [Description("Take two")]
         TakeTwo,
+        [Description("Take four and choose color")]
         TakeFourChooseColor,
+        [Description("Choose color")]
         ChooseColor
     }
 
     public enum UnoCardColor
     {
+        [Description("Red")]
         Red = 0,
+        [Description("Green")]
         Green = 1,
+        [Description("Blue")]
         Blue,
+        [Description("Yellow")]
         Yellow
     }
 }

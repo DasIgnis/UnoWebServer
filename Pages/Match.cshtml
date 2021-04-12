@@ -1,0 +1,29 @@
+﻿@page "{id}"
+@model UnoServer.Pages.MatchModel
+@{
+
+}
+
+<h2>Match @Model.Id</h2>
+@if (Model.CurrentMatch == null)
+{
+    <div style="text-align: center">Match not found</div>
+} else {
+    <div>@Model.CurrentMatch.CurrentPlayer ' s move now</div>
+    <div>On desk:</div>
+    <div>@Model.CurrentMatch.GetCurrentCard().ToString()</div>
+
+    <h3>Log:</h3>
+    @foreach(var move in @Model.CurrentMatch.Backlog)
+    {
+        <div>
+            <b>Player:</b> @move.Player
+            <b>On deck:</b>  @move.DeckCard.ToString()
+            <b>Move:</b>
+            @foreach(var card in move.Move)
+            {
+                @card.ToString() 
+            }
+        </div>
+    }
+}

@@ -16,12 +16,15 @@ namespace UnoServer.Models
         public Guid CurrentPlayer { get; set; }
         public UnoCardColor CurrentColor { get; set; }
 
+        public List<UnoMatchMove> Backlog { get; set; }
+
         public UnoMatch()
         {
             Players = new List<Guid>();
             Deck = GenerateDeck();
             Discharge = new List<UnoCard>();
             Hands = new Dictionary<Guid, List<UnoCard>>();
+            Backlog = new List<UnoMatchMove>();
         }
 
         public UnoMatch(Guid id, List<Guid> players)
@@ -48,6 +51,7 @@ namespace UnoServer.Models
             Deck.RemoveAt(0);
             Discharge.Add(first);
             CurrentPlayer = Players.First();
+            Backlog = new List<UnoMatchMove>();
         }
 
         public List<UnoCard> GetHand(Guid player)
@@ -72,7 +76,7 @@ namespace UnoServer.Models
                 UnoCard currentCard = cards[currentValidatingCard];
                 //TODO: validation
                 currentValidatingCard++;
-            } while (validationFlag && currentValidatingCard < cards.Count());
+            } while (currentValidatingCard < cards.Count());
 
             return validationFlag;
         }
@@ -85,7 +89,7 @@ namespace UnoServer.Models
 
                 foreach (var card in Hands[CurrentPlayer])
                 {
-                    hasMove = hasMove || ValidateMove(new List<UnoCard> { card });
+                    //hasMove = hasMove || ValidateMove(new List<UnoCard> { card });
                 }
 
                 if (hasMove)
@@ -104,6 +108,14 @@ namespace UnoServer.Models
             {
                 return MoveStatus.WRONG_MOVE;
             }
+
+            Backlog.Add(new UnoMatchMove
+            {
+                DeckCard = GetCurrentCard(),
+                Player = CurrentPlayer,
+                Move = cards,
+                SelecteColor = color
+            });
 
             cards.ForEach(card => Hands[CurrentPlayer].Remove(card));
             if (Hands[CurrentPlayer].Count == 0)

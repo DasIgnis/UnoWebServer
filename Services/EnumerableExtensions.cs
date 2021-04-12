@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace UnoServer.Services
@@ -32,6 +34,27 @@ namespace UnoServer.Services
 
                 buffer[j] = buffer[i];
             }
+        }
+
+        public static string GetDescription<T>(this T enumerationValue) where T: struct
+        {
+            Type type = enumerationValue.GetType();
+            if (!type.IsEnum)
+            {
+                throw new ArgumentException();
+            }
+
+            MemberInfo[] memberInfos = type.GetMember(enumerationValue.ToString());
+            if (memberInfos != null && memberInfos.Length > 0)
+            {
+                object[] attrs = memberInfos[0].GetCustomAttributes(typeof(DescriptionAttribute), false);
+                if (attrs != null && attrs.Length > 0)
+                {
+                    return ((DescriptionAttribute)attrs[0]).Description;
+                }
+            }
+
+            return enumerationValue.ToString();
         }
     }
 }
