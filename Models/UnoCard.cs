@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 using UnoServer.Services;
@@ -9,6 +11,7 @@ namespace UnoServer.Models
 {
     public class UnoCard : IEquatable<UnoCard>
     {
+        public Guid Id { get; set; }
         public UnoCardType Type { get; set; }
         public int NumberValue { get; set; }
         public UnoCardColor Color { get; set; }

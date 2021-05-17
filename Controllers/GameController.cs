@@ -89,6 +89,8 @@ namespace UnoServer.Controllers
                     return Ok();
             }
 
+            _matchesStorageService.SaveMove(match);
+
             return Ok();
         }
     }

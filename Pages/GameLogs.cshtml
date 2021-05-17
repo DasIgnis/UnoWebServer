@@ -9,12 +9,12 @@
     {
         <div style="display: grid; grid-template-columns: 2fr 1fr">
             <div>
-                <b>Game between</b> @foreach (var name in match.PlayersNames) {
-                <span>@name </span>
+                <b>Game between</b> @foreach (var name in match.Players) {
+                <span>@name.Name </span>
             }
             </div>
             <div>
-                <b>Winner:</b> @match.WinnerName
+                <b>Winner:</b> @match.Winner.Name
             </div>
         </div>
     }

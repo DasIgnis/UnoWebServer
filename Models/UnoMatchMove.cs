@@ -7,9 +7,11 @@ namespace UnoServer.Models
 {
     public class UnoMatchMove
     {
-        public Guid Player { get; set; }
-        public UnoCard DeckCard { get; set; }
-        public List<UnoCard> Move { get; set; }
+        public Guid Id { get; set; }
+        public Guid PlayerId { get; set; }
+        public virtual User Player { get; set; }
+        public virtual UnoCard DeckCard { get; set; }
+        public virtual List<UnoCard> Move { get; set; }
         public UnoCardColor SelecteColor { get; set; }
     }
 }

@@ -54,6 +54,18 @@ namespace UnoServer.Models
             Backlog = new List<UnoMatchMove>();
         }
 
+        public UnoMatch(DbMatch dbMatch, List<DbHand> hands)
+        {
+            Id = dbMatch.Id;
+            Players = dbMatch.Players.Select(x => x.ExternalId).ToList();
+            Deck = dbMatch.Deck.ToList();
+            Discharge = dbMatch.Discharge.ToList();
+            Hands = hands.ToDictionary(hand => hand.User.ExternalId, hand => hand.Hand.ToList());
+            CurrentPlayer = dbMatch.CurrentPlayer.ExternalId;
+            CurrentColor = dbMatch.CurrentColor;
+            Backlog = dbMatch.Backlog.ToList();
+        }
+
         public List<UnoCard> GetHand(Guid player)
         {
             return Hands[player];
@@ -112,7 +124,7 @@ namespace UnoServer.Models
             Backlog.Add(new UnoMatchMove
             {
                 DeckCard = GetCurrentCard(),
-                Player = CurrentPlayer,
+                PlayerId = CurrentPlayer,
                 Move = cards,
                 SelecteColor = color
             });
