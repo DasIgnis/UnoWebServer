@@ -1,4 +1,5 @@
 ﻿using EnumsNET;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -17,11 +18,15 @@ namespace UnoServer.Controllers
     public class GameController : ControllerBase
     {
         private UnoMatchesStorageService _matchesStorageService;
-        public GameController(UnoMatchesStorageService matchesStorageService)
+        private IdentityContext _context;
+        public GameController(UnoMatchesStorageService matchesStorageService,
+            IdentityContext context)
         {
             _matchesStorageService = matchesStorageService;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
+        [AllowAnonymous]
         [HttpGet("board")]
         [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(BoardResponse))]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
@@ -46,6 +51,7 @@ namespace UnoServer.Controllers
             return Ok(response);
         }
 
+        [AllowAnonymous]
         [HttpPost("move")]
         [ProducesResponseType((int)HttpStatusCode.OK)]
         public async Task<IActionResult> Move([FromBody]MoveRequest request)
@@ -69,7 +75,7 @@ namespace UnoServer.Controllers
                 });
             }
 
-            var responseStatus = match.Move(request.Cards, request.Color);
+            var responseStatus = match.Move(request.Cards, request.Color, _context);
             switch (responseStatus)
             {
                 case MoveStatus.FAKE_EMPTY_MOVE:
@@ -89,7 +95,7 @@ namespace UnoServer.Controllers
                     return Ok();
             }
 
-            _matchesStorageService.SaveMove(match);
+            await _context.SaveChangesAsync();
 
             return Ok();
         }

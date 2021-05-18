@@ -93,8 +93,21 @@ namespace UnoServer.Models
             return validationFlag;
         }
 
-        public MoveStatus Move(List<UnoCard> cards, UnoCardColor color)
+        public MoveStatus Move(
+            List<UnoCard> cards, 
+            UnoCardColor color, 
+            IdentityContext context)
         {
+
+            DbMatch dbMatch = context.Matches.Where(x => x.Id == Id).FirstOrDefault();
+            List<DbHand> hands = context.Hands.Where(x => x.Match.Id == Id).ToList();
+            if (dbMatch == null)
+            {
+                return MoveStatus.WRONG_MOVE;
+            }
+
+            User player;
+
             if (cards.Count == 0)
             {
                 bool hasMove = false;
@@ -110,8 +123,10 @@ namespace UnoServer.Models
                 } 
                 else
                 {
-                    TakeCard(CurrentPlayer);
+                    TakeCard(CurrentPlayer, dbMatch, hands);
                     CurrentPlayer = NextPlayer();
+                    player = context.Users.Where(x => x.ExternalId == CurrentPlayer).FirstOrDefault();
+                    dbMatch.CurrentPlayer = player;
                     return MoveStatus.SUCCESS;
                 }
             }
@@ -121,21 +136,42 @@ namespace UnoServer.Models
                 return MoveStatus.WRONG_MOVE;
             }
 
-            Backlog.Add(new UnoMatchMove
+            UnoMatchMove move = new UnoMatchMove
             {
                 DeckCard = GetCurrentCard(),
                 PlayerId = CurrentPlayer,
                 Move = cards,
                 SelecteColor = color
+            };
+
+            Backlog.Add(move);
+            dbMatch.Backlog.Add(move);
+
+            DbHand currentPlayerHand = hands.Where(x => x.User.ExternalId == CurrentPlayer).FirstOrDefault();
+
+            if (currentPlayerHand == null)
+            {
+                return MoveStatus.WRONG_MOVE;
+            }
+
+            cards.ForEach(card => {
+                Hands[CurrentPlayer].Remove(card);
+                var dbCard = currentPlayerHand
+                    .Hand
+                    .Where(x => x.Color == card.Color && x.NumberValue == card.NumberValue && x.Type == card.Type)
+                    .FirstOrDefault();
+                currentPlayerHand.Hand.Remove(dbCard);
             });
 
-            cards.ForEach(card => Hands[CurrentPlayer].Remove(card));
             if (Hands[CurrentPlayer].Count == 0)
             {
                 return MoveStatus.ENDGAME;
             }
 
-            cards.ForEach(card => Discharge.Add(card));
+            cards.ForEach(card => {
+                Discharge.Add(card);
+                dbMatch.Discharge.Add(card);
+            });
 
             switch (GetCurrentCard().Type)
             {
@@ -146,13 +182,13 @@ namespace UnoServer.Models
                 case UnoCardType.Skip:
                     break;
                 case UnoCardType.TakeTwo:
-                    TakeCard(NextPlayer());
-                    TakeCard(NextPlayer());
+                    TakeCard(NextPlayer(), dbMatch, hands);
+                    TakeCard(NextPlayer(), dbMatch, hands);
                     break;
                 case UnoCardType.TakeFourChooseColor:
                     for (var i = 0; i < 4; i++)
                     {
-                        TakeCard(NextPlayer());
+                        TakeCard(NextPlayer(), dbMatch, hands);
                     }
                     CurrentColor = color;
                     break;
@@ -161,6 +197,11 @@ namespace UnoServer.Models
                     CurrentPlayer = NextPlayer();
                     break;
             }
+
+
+            player = context.Users.Where(x => x.ExternalId == CurrentPlayer).FirstOrDefault();
+            dbMatch.CurrentPlayer = player;
+            dbMatch.CurrentColor = color;
 
             return MoveStatus.SUCCESS;
         }
@@ -172,14 +213,21 @@ namespace UnoServer.Models
             return Players[index];
         }
 
-        private void TakeCard(Guid user)
+        private void TakeCard(Guid user, DbMatch dbMatch, List<DbHand> hands)
         {
             if (Deck.Count == 0)
             {
                 Deck = Discharge.Shuffle().ToList();
+                dbMatch.Deck = Deck;
                 Discharge.Clear();
+                dbMatch.Discharge.Clear();
             }
-            Hands[user].Add(Deck.First());
+
+            DbHand userHand = hands.Where(x => x.User.ExternalId == user).FirstOrDefault();
+
+            userHand.Hand.Add(dbMatch.Deck.First());
+            Hands[user].Add(dbMatch.Deck.First());
+            dbMatch.Deck.RemoveAt(0);
             Deck.RemoveAt(0);
         }
 

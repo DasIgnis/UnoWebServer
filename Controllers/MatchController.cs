@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -23,6 +24,7 @@ namespace UnoServer.Controllers
         /// Get token for authentication
         /// </summary>
         /// <returns></returns>
+        [AllowAnonymous]
         [HttpPost("token")]
         [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(MatchTokenResponse))]
         public async Task<IActionResult> MatchToken([FromBody]MatchTokenRequest request)
@@ -42,6 +44,7 @@ namespace UnoServer.Controllers
         /// </summary>
         /// <param name="request">token - user id got by /token request</param>
         /// <returns>Status = 0 if not matched, Status = 1 and matchId if matched</returns>
+        [AllowAnonymous]
         [HttpPost("start")]
         [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(StartMatchResponse))]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
