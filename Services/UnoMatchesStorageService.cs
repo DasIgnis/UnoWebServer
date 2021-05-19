@@ -28,16 +28,25 @@ namespace UnoServer.Services
                 .ToList();
         }
 
-        public void Enqueue(Guid user, string name)
+        public Guid Enqueue(Guid user, string name)
         {
-            _context.Users.Add(
-                new User
-                {
-                    ExternalId = user,
-                    Name = name
-                });
+            User existing = _context.Users.Where(x => name == x.UserName).FirstOrDefault();
 
-            _context.SaveChanges();
+            if (existing == null)
+            {
+                _context.Users.Add(
+                    new User
+                    {
+                        ExternalId = user,
+                        Name = name
+                    });
+
+                _context.SaveChanges();
+                return user;
+            } else
+            {
+                return existing.ExternalId;
+            }
         }
 
         public bool IsEnqued(Guid user)

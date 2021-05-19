@@ -12,6 +12,7 @@ namespace UnoServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public class MatchController : ControllerBase
     {
         private UnoMatchesStorageService _matchesStorageService;
@@ -24,14 +25,11 @@ namespace UnoServer.Controllers
         /// Get token for authentication
         /// </summary>
         /// <returns></returns>
-        [AllowAnonymous]
         [HttpPost("token")]
         [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(MatchTokenResponse))]
         public async Task<IActionResult> MatchToken([FromBody]MatchTokenRequest request)
         {
-            Guid guid = Guid.NewGuid();
-
-            _matchesStorageService.Enqueue(guid, request.Name);
+            Guid guid = _matchesStorageService.Enqueue(Guid.NewGuid(), request.Name);
 
             return Ok(new MatchTokenResponse
             {
@@ -44,7 +42,6 @@ namespace UnoServer.Controllers
         /// </summary>
         /// <param name="request">token - user id got by /token request</param>
         /// <returns>Status = 0 if not matched, Status = 1 and matchId if matched</returns>
-        [AllowAnonymous]
         [HttpPost("start")]
         [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(StartMatchResponse))]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]

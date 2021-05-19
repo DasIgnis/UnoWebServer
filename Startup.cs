@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -7,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using UnoServer.Models;
 using UnoServer.Services;
 
@@ -24,17 +27,48 @@ namespace UnoServer
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton(new AuthOptions
+            {
+                Issuer = Configuration.GetValue<string>("JWT:Issuer"),
+                Audience = Configuration.GetValue<string>("JWT:Audience"),
+                Key = Configuration.GetValue<string>("JWT:Key"),
+                Lifetime = Configuration.GetValue<int>("JWT:Lifetime")
+            });
+
+            AuthOptions authOptions = Configuration.GetSection("JWT").Get<AuthOptions>();
+
             services.AddRazorPages();
 
             services.AddControllersWithViews();
 
-            services.AddSwaggerGen(c => {
+            services.AddSwaggerGen(c =>
+            {
                 c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
                 {
                     Version = "v1",
                     Title = "Uno players API",
                     Description = "API for testing different UNO clients efficency"
                 });
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    In = ParameterLocation.Header,
+                    Description = "Please insert JWT with Bearer into field",
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.ApiKey
+                });
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+                   {
+                     new OpenApiSecurityScheme
+                     {
+                       Reference = new OpenApiReference
+                       {
+                         Type = ReferenceType.SecurityScheme,
+                         Id = "Bearer"
+                       }
+                      },
+                      new string[] { }
+                    }
+                  });
             });
 
             services.AddScoped<UnoMatchesStorageService>();
@@ -42,15 +76,38 @@ namespace UnoServer
             services.AddDbContext<IdentityContext>(options =>
                 options.UseLazyLoadingProxies().UseSqlite(Configuration.GetConnectionString("Database")));
 
-            services.AddIdentity<User, IdentityRole>()
+            services.AddIdentityCore<User>()
                 .AddEntityFrameworkStores<IdentityContext>();
+
+            services.AddAuthentication(cfg =>
+            {
+                cfg.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                cfg.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+                    .AddJwtBearer(options =>
+                    {
+                        //options.RequireHttpsMetadata = false;
+                        options.TokenValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuer = true,
+                            ValidIssuer = authOptions.Issuer,
+
+                            ValidateAudience = true,
+                            ValidAudience = authOptions.Audience,
+                            ValidateLifetime = true,
+
+                            IssuerSigningKey = authOptions.GetSymmetricSecurityKey(),
+                            ValidateIssuerSigningKey = true,
+                        };
+                    });
 
             services.AddAuthorization(options =>
             {
-                options.FallbackPolicy = new AuthorizationPolicyBuilder()
-                    .RequireAuthenticatedUser()
-                    .Build();
+                options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+                .RequireAuthenticatedUser()
+                .Build();
             });
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -68,6 +125,15 @@ namespace UnoServer
                 app.UseHsts();
             }
 
+            app.UseAuthentication();
+            app.UseRouting();
+            app.UseAuthorization();
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapRazorPages();
+                endpoints.MapControllers();
+            });
+
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
@@ -75,21 +141,14 @@ namespace UnoServer
                 c.RoutePrefix = string.Empty;
             });
 
-            app.UseHttpsRedirection();
             app.UseStaticFiles();
 
-            app.UseRouting();
-
-            app.UseAuthentication();
-            app.UseAuthorization();
-
-            app.UseEndpoints(endpoints =>
+            app.UseCors(policy =>
             {
-                endpoints.MapRazorPages();
-                endpoints.MapControllers();
+                policy.AllowAnyMethod();
+                policy.AllowAnyHeader();
+                policy.AllowAnyOrigin();
             });
-
-            app.UseCors(policy => policy.AllowAnyOrigin());
         }
     }
 }

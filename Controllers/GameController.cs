@@ -15,6 +15,7 @@ namespace UnoServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     public class GameController : ControllerBase
     {
         private UnoMatchesStorageService _matchesStorageService;
@@ -26,7 +27,6 @@ namespace UnoServer.Controllers
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        [AllowAnonymous]
         [HttpGet("board")]
         [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(BoardResponse))]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
@@ -51,7 +51,6 @@ namespace UnoServer.Controllers
             return Ok(response);
         }
 
-        [AllowAnonymous]
         [HttpPost("move")]
         [ProducesResponseType((int)HttpStatusCode.OK)]
         public async Task<IActionResult> Move([FromBody]MoveRequest request)
